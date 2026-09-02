@@ -1,0 +1,1065 @@
+{
+	"info": {
+		"_postman_id": "8f03c0b1-4f12-4c6e-8219-9430c4e72301",
+		"name": "Jeopardy Quiz Game API",
+		"description": "Complete Postman collection for testing the Jeopardy Quiz Game RESTful API backend, including game session lifecycle, dynamic turn management, scoring, moderation, and leaderboards.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Game Sessions",
+			"description": "Endpoints to manage the game session lifecycle (creation, starting, current active question, turn progression, and restart).",
+			"item": [
+				{
+					"name": "1. Create Game Session",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.data) {",
+									"    pm.collectionVariables.set(\"game_id\", jsonData.data.id);",
+									"    pm.collectionVariables.set(\"session_code\", jsonData.data.session_code);",
+									"    if (jsonData.data.teams && jsonData.data.teams.length >= 2) {",
+									"        pm.collectionVariables.set(\"team_id_1\", jsonData.data.teams[0].id);",
+									"        pm.collectionVariables.set(\"team_id_2\", jsonData.data.teams[1].id);",
+									"    }",
+									"    console.log(\"Saved game_id:\", jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"team1_name\": \"Red Dragons\",\n    \"team2_name\": \"Blue Falcons\",\n    \"timer_duration_seconds\": 30\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/games",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games"
+							]
+						},
+						"description": "Initializes a new game session with two teams and a default question timer duration. Automatically extracts and sets `game_id`, `team_id_1`, and `team_id_2` collection variables."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Start Game Session",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/games/{{game_id}}/start",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"{{game_id}}",
+								"start"
+							]
+						},
+						"description": "Transitions the game from `not_started` to `in_progress`, selects the first section and question, and assigns the starting team's turn."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Get Current Question & Turn",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.data && jsonData.data.question) {",
+									"    pm.collectionVariables.set(\"question_id\", jsonData.data.question.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/games/{{game_id}}/current-question",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"{{game_id}}",
+								"current-question"
+							]
+						},
+						"description": "Retrieves the active question, current answering team, and remaining timer duration."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Advance to Next Question / Turn",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/games/{{game_id}}/next-question",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"{{game_id}}",
+								"next-question"
+							]
+						},
+						"description": "Moves to the next question within the active section, advances to the next section when exhausted, alternates the team turn, or marks the game completed."
+					},
+					"response": []
+				},
+				{
+					"name": "5. Get Game Session Details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/games/{{game_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"{{game_id}}"
+							]
+						},
+						"description": "Fetches the full state of a game session including current section, question, team turn, scores, and status."
+					},
+					"response": []
+				},
+				{
+					"name": "6. List All Games (Paginated)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/games?page=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Returns a paginated list of historical and active game sessions."
+					},
+					"response": []
+				},
+				{
+					"name": "7. Restart Game Session",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"preserve_history\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/games/{{game_id}}/restart",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"{{game_id}}",
+								"restart"
+							]
+						},
+						"description": "Resets the game state back to the first question with scores reset to 0 while optionally preserving audit logs."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Scores & Moderation",
+			"description": "Endpoints to inspect current scores, audit logs, and perform moderator score overrides / adjustments.",
+			"item": [
+				{
+					"name": "1. Get Current Game Scores",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/games/{{game_id}}/scores",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"{{game_id}}",
+								"scores"
+							]
+						},
+						"description": "Retrieves the current scores for all teams in the specified game session."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Adjust Team Score (+ / - Delta) [Moderator]",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "X-Moderator-Key",
+								"value": "{{moderator_secret}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"team_id\": {{team_id_1}},\n    \"delta\": 100,\n    \"reason\": \"Awarded points for correct answer to question #1\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/games/{{game_id}}/scores/adjust",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"{{game_id}}",
+								"scores",
+								"adjust"
+							]
+						},
+						"description": "Increments or decrements a team's score by `delta` points (e.g. +100 or -50) and logs an audit record."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Override Team Scores (Direct Value) [Moderator]",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "X-Moderator-Key",
+								"value": "{{moderator_secret}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"team1_score\": 300,\n    \"team2_score\": 150,\n    \"reason\": \"Moderator manual correction\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/games/{{game_id}}/scores",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"{{game_id}}",
+								"scores"
+							]
+						},
+						"description": "Sets explicit absolute scores for Team 1 and Team 2, or specific teams via `team_scores` map."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Get Score Audit Logs",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/games/{{game_id}}/scores/logs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"{{game_id}}",
+								"scores",
+								"logs"
+							]
+						},
+						"description": "Fetches a full audit trail of score modifications, delta changes, previous/new scores, and moderator reasons."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Leaderboard",
+			"description": "Endpoints for game-specific rankings and global all-time team standings.",
+			"item": [
+				{
+					"name": "1. Get Game Leaderboard",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/games/{{game_id}}/leaderboard",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"{{game_id}}",
+								"leaderboard"
+							]
+						},
+						"description": "Retrieves the leaderboard for the specified game session ranked by highest score."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Get Global Leaderboard",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/leaderboard",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"leaderboard"
+							]
+						},
+						"description": "Retrieves overall team rankings across all games."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Sections & Questions",
+			"description": "Endpoints to view quiz sections, retrieve questions, and create new sections/questions (with moderator auth).",
+			"item": [
+				{
+					"name": "1. List Active Sections",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.data && jsonData.data.length > 0) {",
+									"    pm.collectionVariables.set(\"section_id\", jsonData.data[0].id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/sections",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sections"
+							]
+						},
+						"description": "Lists all active categories/sections and their question counts. Sets `section_id` variable."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Get Section with Questions",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/sections/{{section_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sections",
+								"{{section_id}}"
+							]
+						},
+						"description": "Returns section details and all questions belonging to it."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Get Questions for a Section",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.data && jsonData.data.length > 0) {",
+									"    pm.collectionVariables.set(\"question_id\", jsonData.data[0].id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/sections/{{section_id}}/questions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sections",
+								"{{section_id}}",
+								"questions"
+							]
+						},
+						"description": "Lists all questions for a specific section ordered by order index."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Get Question Details (Public)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/questions/{{question_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"questions",
+								"{{question_id}}"
+							]
+						},
+						"description": "Public question query (answers are hidden from players without moderator key)."
+					},
+					"response": []
+				},
+				{
+					"name": "5. Get Question Details with Answer [Moderator]",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Answer field is present for moderator\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('answer');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "X-Moderator-Key",
+								"value": "{{moderator_secret}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/questions/{{question_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"questions",
+								"{{question_id}}"
+							]
+						},
+						"description": "Fetches question details with the answer revealed via the `X-Moderator-Key` header."
+					},
+					"response": []
+				},
+				{
+					"name": "6. Create New Section [Moderator]",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.data) {",
+									"    pm.collectionVariables.set(\"section_id\", jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "X-Moderator-Key",
+								"value": "{{moderator_secret}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"World Geography\",\n    \"description\": \"Questions about countries, capitals, and landmarks\",\n    \"order\": 5,\n    \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/sections",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sections"
+							]
+						},
+						"description": "Creates a new category section. Requires moderator key."
+					},
+					"response": []
+				},
+				{
+					"name": "7. Create Question in Section [Moderator]",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.data) {",
+									"    pm.collectionVariables.set(\"question_id\", jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "X-Moderator-Key",
+								"value": "{{moderator_secret}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"question_text\": \"What is the capital city of Australia?\",\n    \"answer\": \"Canberra\",\n    \"points\": 100,\n    \"order\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/sections/{{section_id}}/questions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sections",
+								"{{section_id}}",
+								"questions"
+							]
+						},
+						"description": "Creates a question within the specified section path."
+					},
+					"response": []
+				},
+				{
+					"name": "8. Create Question Directly [Moderator]",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.data) {",
+									"    pm.collectionVariables.set(\"question_id\", jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "X-Moderator-Key",
+								"value": "{{moderator_secret}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"section_id\": {{section_id}},\n    \"question_text\": \"Which country has the longest coastline in the world?\",\n    \"answer\": \"Canada\",\n    \"points\": 200,\n    \"order\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/questions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"questions"
+							]
+						},
+						"description": "Creates a question directly via POST /questions with `section_id` in request body."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Auth / Sanctum",
+			"description": "Endpoints related to user authentication.",
+			"item": [
+				{
+					"name": "1. Get Authenticated User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sanctum_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/user",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user"
+							]
+						},
+						"description": "Returns current authenticated user details if Sanctum token is configured."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8000/api",
+			"type": "string"
+		},
+		{
+			"key": "moderator_secret",
+			"value": "moderator-secret-key-12345",
+			"type": "string"
+		},
+		{
+			"key": "game_id",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "section_id",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "question_id",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "team_id_1",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "team_id_2",
+			"value": "2",
+			"type": "string"
+		},
+		{
+			"key": "session_code",
+			"value": "GAME-001",
+			"type": "string"
+		},
+		{
+			"key": "sanctum_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
